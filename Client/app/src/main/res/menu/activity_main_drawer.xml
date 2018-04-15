@@ -5,33 +5,29 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_camera"
-            android:icon="@drawable/ic_menu_camera"
-            android:title="Import" />
-        <item
-            android:id="@+id/nav_gallery"
-            android:icon="@drawable/ic_menu_gallery"
-            android:title="Gallery" />
-        <item
-            android:id="@+id/nav_slideshow"
+            android:id="@+id/nav_distributeTask"
             android:icon="@drawable/ic_menu_slideshow"
-            android:title="Slideshow" />
+            android:title="Distribute Task" />
         <item
-            android:id="@+id/nav_manage"
-            android:icon="@drawable/ic_menu_manage"
-            android:title="Tools" />
+            android:id="@+id/nav_viewReceivedTasks"
+            android:icon="@drawable/ic_menu_camera"
+            android:title="View Received Task" />
+        <item
+            android:id="@+id/nav_viewDistributeTask"
+            android:icon="@drawable/ic_menu_gallery"
+            android:title="View Distribute Task" />
     </group>
 
-    <item android:title="Communicate">
+    <item android:title="Setting">
         <menu>
             <item
-                android:id="@+id/nav_share"
-                android:icon="@drawable/ic_menu_share"
-                android:title="Share" />
+                android:id="@+id/nav_editPassword"
+                android:icon="@drawable/ic_logo"
+                android:title="Change Password"></item>
             <item
-                android:id="@+id/nav_send"
-                android:icon="@drawable/ic_menu_send"
-                android:title="Send" />
+                android:id="@+id/nav_editInformation"
+                android:icon="@drawable/ic_menu_share"
+                android:title="Edit Information" />
         </menu>
     </item>
 

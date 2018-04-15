@@ -23,6 +23,18 @@ public class MySQL {
 		}
 	}
 	public static boolean update(String sql) {
+		try{
+			Connection conn = getConn(db);
+			Statement st=conn.createStatement();
+			if(st.executeUpdate(sql)==1) {
+				return true;
+			}else{
+				return false;
+			}
+		}catch(SQLException e) {
+			e.printStackTrace();
+		}
+		
 		return false;
 	}
 	public static boolean query(String sql,String requests[],String answers[]) {
@@ -30,15 +42,14 @@ public class MySQL {
     		Connection conn = getConn(db);
 			Statement st=conn.createStatement();
 			ResultSet rs=st.executeQuery(sql);
-			System.out.println("query finish");
 			if(rs.next()) {
 				for(int i=0;i<requests.length;i++) {
 					answers[i]=new String(rs.getString(requests[i]));
 				}
+				st.close();
+				conn.close();
 				return true;
 			}
-			st.close();
-			conn.close();
 		} catch (SQLException e) {
 			// TODO 自动生成的 catch 块
 			e.printStackTrace();

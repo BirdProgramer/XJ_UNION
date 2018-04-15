@@ -3,6 +3,7 @@ package com.ct.mywork;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.JsonReader;
 import android.util.JsonWriter;
 import android.util.Log;
 import android.view.View;
@@ -13,10 +14,15 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 
 
 public class RegisterActivity extends AppCompatActivity implements View.OnClickListener{
+    private String TAG="RegisterActivity";
     private EditText editText_name;
     private EditText editText_number;
     private EditText editText_email;
@@ -49,10 +55,9 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
                     case 2:
                         Toast.makeText(RegisterActivity.this, "Register failed", Toast.LENGTH_SHORT).show();break;
                     case 3:
-                        Toast.makeText(RegisterActivity.this, "Connection error", Toast.LENGTH_SHORT).show();break;
+                        Toast.makeText(RegisterActivity.this, "Connection timeout", Toast.LENGTH_SHORT).show();break;
                     default:
-
-                        Toast.makeText(RegisterActivity.this, "Fuck", Toast.LENGTH_SHORT).show();break;
+                        Toast.makeText(RegisterActivity.this, "ERROR", Toast.LENGTH_SHORT).show();break;
                 }
             }
         };
@@ -71,14 +76,14 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
     }
     private void confirmRegister(){                                     //处理注册信息
         String name=editText_name.getText().toString();
-        String number=editText_number.getText().toString();
+        String account=editText_number.getText().toString();
         String telNumber=editText_phoneNumber.getText().toString();
         String email=editText_email.getText().toString();
         String password=editText_password.getText().toString();
         String confirmPassword=editText_confirmpassword.getText().toString();
         if(!checkName(name)){
             Toast.makeText(RegisterActivity.this,"Name is invalid",Toast.LENGTH_SHORT).show();
-        }else if(!checkNumber(number)){
+        }else if(!checkNumber(account)){
             Toast.makeText(RegisterActivity.this,"Number is invalid",Toast.LENGTH_SHORT).show();
         }else if(!checkPhoneNumber(telNumber)){
             Toast.makeText(RegisterActivity.this,"PhoneNumber is invalid",Toast.LENGTH_SHORT).show();
@@ -89,7 +94,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
         }else if(!checkConfirmPassword(password,confirmPassword)){
             Toast.makeText(RegisterActivity.this,"Please confirm password",Toast.LENGTH_SHORT).show();
         }else{
-            RegisterThread registerThread=new RegisterThread(name,password,number,telNumber,email);
+            RegisterThread registerThread=new RegisterThread(name,password,account,telNumber,email);
             registerThread.start();
             Toast.makeText(RegisterActivity.this, "Registering", Toast.LENGTH_SHORT).show();
         }
@@ -140,46 +145,56 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
     }
 
     class RegisterThread extends Thread {
-        private String name,password,number,telnumber,email;
-        public RegisterThread(String name,String password,String number,String telnumber,String email){
+        private String name,password,account,telnumber,email;
+        public RegisterThread(String name,String password,String account,String telnumber,String email){
             this.name=name;
             this.password=password;
-            this.number=number;
+            this.account=account;
             this.telnumber=telnumber;
             this.email=email;
         }
         public void run(){
             Message message=new Message();
             try{
-                Socket socket = new Socket(ServerData.IP, ServerData.PORT);
+                Socket socket = new Socket();
+                socket.connect(new InetSocketAddress(ServerData.IP,ServerData.PORT),ServerData.timeout);
                 InputStreamReader in=new InputStreamReader(socket.getInputStream());
-                OutputStreamWriter outputStreamWriter=new OutputStreamWriter(socket.getOutputStream(),"utf-8");
-                outputStreamWriter.write("1");
-                outputStreamWriter.flush();
-                Log.e("outputStream",name);
+                OutputStreamWriter outputStreamWriter=new OutputStreamWriter(socket.getOutputStream());
                 JsonWriter jsonWriter = new JsonWriter(outputStreamWriter);
                 jsonWriter.beginObject();
+                jsonWriter.name("intent").value("register");
                 jsonWriter.name("name").value(name);
                 jsonWriter.name("password").value(password);
-                jsonWriter.name("number").value(number);
-                jsonWriter.name("telnumber").value(telnumber);
+                jsonWriter.name("account").value(account);
+                jsonWriter.name("telNumber").value(telnumber);
                 jsonWriter.name("email").value(email);
                 jsonWriter.endObject();
-                outputStreamWriter.flush();
+                jsonWriter.flush();
+
                 //接收消息
-                char c=(char)(in.read());
-                switch(c){
-                    case 's':message.what=1;break;
-                    case 'f':message.what=2;break;
+                socket.setSoTimeout(1000);
+                JsonReader jsonReader=new JsonReader(in);
+                Bundle bundle=new Bundle();
+                jsonReader.beginObject();
+                while(jsonReader.hasNext()){
+                    bundle.putString(jsonReader.nextName(),jsonReader.nextString());
+                }
+                jsonReader.endObject();
+                switch(bundle.getString("result")){
+                    case "success":message.what=1;break;
+                    case "failure":message.what=2;break;
                     default:break;
                 }
                 jsonWriter.close();
                 outputStreamWriter.close();
                 in.close();
                 socket.close();
-            }catch (IOException e) {
+            }catch (SocketTimeoutException e) {
                 e.printStackTrace();
-                Log.e("注册失败",number+"注册失败");
+                Log.e(TAG,"Connect Timeout");
+                message.what=3;
+            }catch (IOException e){
+                Log.e(TAG,"Connect Failed");
                 message.what=3;
             }
             registerHandler.sendMessage(message);
